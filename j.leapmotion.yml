@@ -1,6 +1,6 @@
 
 sources:
-  - j.leapmotion.cpp
+  - source/j.leapmotion.cpp
   - ../c74support/max-includes/common/commonsyms.cpp
     
 includes:
