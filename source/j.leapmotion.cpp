@@ -8,9 +8,9 @@
  *
  * @author Théo de la Hogue (based on the Masayuki Akamatsu aka.leapmotion external source)
  *
- * @copyright Copyright © 2014, Théo de la Hogue @n
- * This code is licensed under the terms of the "CeCILL-C" @n
- * http://www.cecill.info
+ * @copyright © 2014 by Théo de la Hogue @n
+ * This code is licensed under the terms of the "New BSD License" @n
+ * http://creativecommons.org/licenses/BSD/
  */
 
 #include "ext.h"							// standard Max include, always required
