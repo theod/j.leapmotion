@@ -6,6 +6,7 @@ build
 html
 Debug
 Release
+Makefile
 
 # XCode files to be ignored
 xcuserdata

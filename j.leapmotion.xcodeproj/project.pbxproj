@@ -17,12 +17,14 @@
 		466B4FAA1A10E38A00BB1AE9 /* LeapUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LeapUtil.h; sourceTree = "<group>"; };
 		466B4FAB1A10E38A00BB1AE9 /* LeapUtilGL.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LeapUtilGL.cpp; sourceTree = "<group>"; };
 		466B4FAC1A10E38A00BB1AE9 /* LeapUtilGL.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LeapUtilGL.h; sourceTree = "<group>"; };
+		469F02741A10E5FA008B5B90 /* j.leapmotion.yml */ = {isa = PBXFileReference; lastKnownFileType = text; path = j.leapmotion.yml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		4629CFBD1A10DEF400853772 = {
 			isa = PBXGroup;
 			children = (
+				469F02741A10E5FA008B5B90 /* j.leapmotion.yml */,
 				466B4FA01A10E0FC00BB1AE9 /* Makefile */,
 				466B4FA11A10E38A00BB1AE9 /* include */,
 				466B4FA41A10E38A00BB1AE9 /* source */,
@@ -50,12 +52,12 @@
 		466B4FA61A10E38A00BB1AE9 /* util */ = {
 			isa = PBXGroup;
 			children = (
-				466B4FA81A10E38A00BB1AE9 /* LeapScene.h */,
 				466B4FA71A10E38A00BB1AE9 /* LeapScene.cpp */,
-				466B4FAA1A10E38A00BB1AE9 /* LeapUtil.h */,
+				466B4FA81A10E38A00BB1AE9 /* LeapScene.h */,
 				466B4FA91A10E38A00BB1AE9 /* LeapUtil.cpp */,
-				466B4FAC1A10E38A00BB1AE9 /* LeapUtilGL.h */,
+				466B4FAA1A10E38A00BB1AE9 /* LeapUtil.h */,
 				466B4FAB1A10E38A00BB1AE9 /* LeapUtilGL.cpp */,
+				466B4FAC1A10E38A00BB1AE9 /* LeapUtilGL.h */,
 			);
 			path = util;
 			sourceTree = "<group>";
