@@ -48,7 +48,7 @@ int C74_EXPORT main(void)
 {
 	t_class *c;
 	
-	c = class_new("aka.leapmotion", (method)akaleapmotion_new, (method)akaleapmotion_free, (long)sizeof(t_akaleapmotion),
+	c = class_new("j.leapmotion", (method)akaleapmotion_new, (method)akaleapmotion_free, (long)sizeof(t_akaleapmotion),
 				  0L /* leave NULL!! */, A_GIMME, 0);
 	
     class_addmethod(c, (method)akaleapmotion_bang, "bang", 0);
@@ -222,7 +222,7 @@ void *akaleapmotion_new(t_symbol *s, long argc, t_atom *argv)
     
 	if ((x = (t_akaleapmotion *)object_alloc((t_class *)akaleapmotion_class)))
 	{
-		object_post((t_object *)x, "aka.leapmotion 0.21(32/64 bit) for The Leap 0.7.0");
+		object_post((t_object *)x, "j.leapmotion 0.1(32/64 bit) for The Leap 2.1.6");
             
         x->frame_id_save = 0;
         x->outlet = outlet_new(x, NULL);
