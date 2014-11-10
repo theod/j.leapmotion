@@ -8,7 +8,7 @@ j.leapmotion ...
 
 
 Installing
-You have to install j.leapmotion repository into Jamoma/Implementation/Max/source folder (see https://github.com/jamoma/JamomaMax) and then to use make command in Terminal from the j.leapmotion folder.
+use make command in Terminal from the j.leapmotion folder
 
 
 License
