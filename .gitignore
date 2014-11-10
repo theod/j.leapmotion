@@ -32,11 +32,10 @@ project.xcworkspace
 *.x64.o-*
 *.i386.o-*
 
-*.ttdylib
-*.dylib
-
-*.ttdll
-*.dll
+build/*.ttdylib
+build/*.dylib
+build/*.ttdll
+build/*.dll
 
 *.mxo
 *.sdf
