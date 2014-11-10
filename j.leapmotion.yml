@@ -1,0 +1,15 @@
+
+sources:
+  - j.leapmotion.cpp
+  - ../c74support/max-includes/common/commonsyms.cpp
+    
+includes:
+  - include
+  - util
+  - C74-INCLUDES
+
+libraries:
+  - lib/libLeap.dylib
+  - C74
+
+prefix: ../c74support/max-includes/macho-prefix.pch
