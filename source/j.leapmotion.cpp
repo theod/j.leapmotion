@@ -24,13 +24,13 @@
 #include <math.h>
 
 ////////////////////////// object struct
-typedef struct _akaleapmotion
+typedef struct _leapmotion
 {
 	t_object	ob;
 	int64_t		frame_id_save;
 	void		**outlets;
 	Leap::Controller	*leap;
-} t_akaleapmotion;
+} t_leapmotion;
 
 #define end_frame_out 0
 #define gesture_out 1
@@ -42,39 +42,39 @@ typedef struct _akaleapmotion
 
 ///////////////////////// function prototypes
 //// standard set
-void *akaleapmotion_new(t_symbol *s, long argc, t_atom *argv);
-void akaleapmotion_free(t_akaleapmotion *x);
-void akaleapmotion_assist(t_akaleapmotion *x, void *b, long m, long a, char *s);
+void *leapmotion_new(t_symbol *s, long argc, t_atom *argv);
+void leapmotion_free(t_leapmotion *x);
+void leapmotion_assist(t_leapmotion *x, void *b, long m, long a, char *s);
 
-void akaleapmotion_bang(t_akaleapmotion *x);
+void leapmotion_bang(t_leapmotion *x);
 
 //////////////////////// global class pointer variable
-void *akaleapmotion_class;
+void *leapmotion_class;
 
 //////////////////////// Max functions
 int C74_EXPORT main(void)
 {
 	t_class *c;
 	
-	c = class_new("j.leapmotion", (method)akaleapmotion_new, (method)akaleapmotion_free, (long)sizeof(t_akaleapmotion),
+	c = class_new("j.leapmotion", (method)leapmotion_new, (method)leapmotion_free, (long)sizeof(t_leapmotion),
 				  0L /* leave NULL!! */, A_GIMME, 0);
 	
-    class_addmethod(c, (method)akaleapmotion_bang, "bang", 0);
+    class_addmethod(c, (method)leapmotion_bang, "bang", 0);
     
 	/* you CAN'T call this from the patcher */
-    class_addmethod(c, (method)akaleapmotion_assist, "assist", A_CANT, 0);
+    class_addmethod(c, (method)leapmotion_assist, "assist", A_CANT, 0);
 	
 	class_register(CLASS_BOX, c);
-	akaleapmotion_class = c;
+	leapmotion_class = c;
     
 	return 0;
 }
 
-void *akaleapmotion_new(t_symbol *s, long argc, t_atom *argv)
+void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
 {
-	t_akaleapmotion *x = NULL;
+	t_leapmotion *x = NULL;
     
-	if ((x = (t_akaleapmotion *)object_alloc((t_class *)akaleapmotion_class)))
+	if ((x = (t_leapmotion *)object_alloc((t_class *)leapmotion_class)))
 	{
 		object_post((t_object *)x, "j.leapmotion 0.1(32/64 bit) for The Leap 2.1.6");
         
@@ -97,22 +97,43 @@ void *akaleapmotion_new(t_symbol *s, long argc, t_atom *argv)
     return x;
 }
 
-void akaleapmotion_free(t_akaleapmotion *x)
+void leapmotion_free(t_leapmotion *x)
 {
 	delete (Leap::Controller *)(x->leap);
 }
 
-void akaleapmotion_assist(t_akaleapmotion *x, void *b, long m, long a, char *s)
+void leapmotion_assist(t_leapmotion *x, void *b, long msg, long arg, char *dst)
 {
-	if (m == ASSIST_INLET) { //inlet
-		sprintf(s, "bang to cause the frame data output");
-	}
-	else {	// outlet
-		sprintf(s, "list(frame data)");
-	}
+	if (msg == ASSIST_INLET)            // Inlet
+        strcpy(dst, "input");
+	else {								// Outlets
+		switch(arg) {
+			case end_frame_out:
+            strcpy(dst, "end frame");
+            break;
+			case gesture_out:
+            strcpy(dst, "gestures info");
+            break;
+			case tool_out:
+            strcpy(dst, "tools info");
+            break;
+			case finger_out:
+            strcpy(dst, "fingers info");
+            break;
+            case hand_out:
+            strcpy(dst, "hands info");
+            break;
+            case frame_out:
+            strcpy(dst, "frames info");
+            break;
+            case start_frame_out:
+            strcpy(dst, "start frame");
+            break;
+		}
+ 	}
 }
 
-void akaleapmotion_bang(t_akaleapmotion *x)
+void leapmotion_bang(t_leapmotion *x)
 {
 	const Leap::Frame frame = x->leap->frame();
 	const int64_t frame_id = frame.id();
@@ -121,10 +142,11 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 	if (frame_id == x->frame_id_save) return;
 	x->frame_id_save = frame_id;
 	
-    // output start frame bang
+    /// output start frame bang /////////////////////////////////////////////
 	outlet_bang(x->outlets[start_frame_out]);
     
-    // output frame info
+    
+    /// output frame info ///////////////////////////////////////////////////
 	const Leap::HandList hands = frame.hands();
 	const size_t numHands = hands.count();
 	const Leap::ToolList tools = frame.tools();
@@ -139,8 +161,9 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 	atom_setlong(frame_data+3, numTools);
     atom_setlong(frame_data+4, numGestures);
 	outlet_anything(x->outlets[frame_out], _sym_list, 5, frame_data);
+    
 	
-    // output hand info
+    /// output hand info ////////////////////////////////////////////////////
 	for (size_t i = 0; i < numHands; i++)
 	{
         const Leap::Hand &hand = hands[i];
@@ -197,14 +220,14 @@ void akaleapmotion_bang(t_akaleapmotion *x)
         outlet_anything(x->outlets[hand_out], _sym_list, 20, hand_data);
         
         
-        // output finger info
+        /// output finger info //////////////////////////////////////////////
 		const Leap::FingerList &fingers = hand.fingers();
 		const size_t numFingers = fingers.count();
 		
 		for (size_t j = 0; j < numFingers; j++)
 		{
             const Leap::Finger &finger = fingers[j];
-            t_atom finger_data[16];
+            t_atom finger_data[15];
             
 			// ids
 			const int32_t finger_id = finger.id();
@@ -241,22 +264,33 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 			atom_setfloat(finger_data+12, lenght);
             
             // misc
-            const bool isTool = finger.isTool();
 			const bool isExtended = finger.isExtended();
 			const int32_t type = finger.type();
             
-			atom_setlong(finger_data+13, isTool);
-			atom_setlong(finger_data+14, isExtended);
-			atom_setlong(finger_data+15, type);
+			atom_setlong(finger_data+13, isExtended);
+			atom_setlong(finger_data+14, type);
 			
-			outlet_anything(x->outlets[finger_out], gensym("finger"), 16, finger_data);
+			outlet_anything(x->outlets[finger_out], _sym_list, 15, finger_data);
 		}
 	}
     
-    // output tool info
+    /// output tool info ///////////////////////////////////////////////////
+    for (size_t i = 0; i < numTools; i++)
+	{
+        const Leap::Tool &tool = tools[i];
+        t_atom tool_data[20];
+        
+        outlet_anything(x->outlets[tool_out], _sym_list, 20, tool_data);
+    }
     
-    
-    // output gesture info
+    /// output gesture info ////////////////////////////////////////////////
+    for (size_t i = 0; i < numGestures; i++)
+	{
+        const Leap::Gesture &gesture = gestures[i];
+        t_atom gesture_data[20];
+        
+        outlet_anything(x->outlets[gesture_out], _sym_list, 20, gesture_data);
+    }
 	
 	outlet_bang(x->outlets[end_frame_out]);
 }
