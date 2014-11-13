@@ -90,12 +90,15 @@ void akaleapmotion_bang(t_akaleapmotion *x)
     
 	const Leap::HandList hands = frame.hands();
 	const size_t numHands = hands.count();
+	const Leap::ToolList tools = frame.tools();
+	const size_t numTools = tools.count();
 	
-	t_atom frame_data[3];
+	t_atom frame_data[4];
 	atom_setlong(frame_data, frame_id);
 	atom_setlong(frame_data+1, frame.timestamp());
 	atom_setlong(frame_data+2, numHands);
-	outlet_anything(x->outlet, gensym("frame"), 3, frame_data);
+	atom_setlong(frame_data+3, numTools);
+	outlet_anything(x->outlet, gensym("frame"), 4, frame_data);
 	
 	for(size_t i = 0; i < numHands; i++)
 	{
@@ -123,8 +126,10 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 			const double width = finger.width();
 			const double lenght = finger.length();
 			const bool isTool = finger.isTool();
+			const bool isExtended = finger.isExtended();
+			const int32_t type = finger.type();
 			
-			t_atom finger_data[15];
+			t_atom finger_data[17];
 			atom_setlong(finger_data, finger_id);
 			atom_setlong(finger_data+1, hand_id);
 			atom_setlong(finger_data+2, frame_id);
@@ -140,7 +145,10 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 			atom_setfloat(finger_data+12, width);
 			atom_setfloat(finger_data+13, lenght);
 			atom_setlong(finger_data+14, isTool);
-			outlet_anything(x->outlet, gensym("finger"), 15, finger_data);
+			atom_setlong(finger_data+15, isExtended);
+			atom_setlong(finger_data+16, type);
+			
+			outlet_anything(x->outlet, gensym("finger"), 17, finger_data);
 		}
 		
 		// Palm
@@ -149,8 +157,10 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 		//{
         const Leap::Vector position = hand.palmPosition();
         const Leap::Vector direction = hand.direction();
+		const double pinch = hand.pinchStrength();
+		const double grab = hand.grabStrength();
         
-        t_atom palm_data[14];
+        t_atom palm_data[16];
         atom_setlong(palm_data, hand_id);
         atom_setlong(palm_data+1, frame_id);
         atom_setfloat(palm_data+2, position.x);
@@ -192,7 +202,11 @@ void akaleapmotion_bang(t_akaleapmotion *x)
          atom_setfloat(palm_data+13, 0);
          }
          */
-        outlet_anything(x->outlet, gensym("palm"), 14, palm_data);
+		
+		atom_setfloat(palm_data+14, pinch);
+		atom_setfloat(palm_data+15, grab);
+		
+        outlet_anything(x->outlet, gensym("palm"), 16, palm_data);
 		//}
 		
 		// Ball
