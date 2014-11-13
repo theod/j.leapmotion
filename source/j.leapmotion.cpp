@@ -159,8 +159,9 @@ void akaleapmotion_bang(t_akaleapmotion *x)
         const Leap::Vector direction = hand.direction();
 		const double pinch = hand.pinchStrength();
 		const double grab = hand.grabStrength();
+		const bool isLeft = hand.isLeft();
         
-        t_atom palm_data[16];
+        t_atom palm_data[17];
         atom_setlong(palm_data, hand_id);
         atom_setlong(palm_data+1, frame_id);
         atom_setfloat(palm_data+2, position.x);
@@ -205,8 +206,9 @@ void akaleapmotion_bang(t_akaleapmotion *x)
 		
 		atom_setfloat(palm_data+14, pinch);
 		atom_setfloat(palm_data+15, grab);
+		atom_setlong(palm_data+16, isLeft);
 		
-        outlet_anything(x->outlet, gensym("palm"), 16, palm_data);
+        outlet_anything(x->outlet, gensym("palm"), 17, palm_data);
 		//}
 		
 		// Ball
