@@ -82,13 +82,13 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         
         // Make several outlets
         x->outlets = (void**)sysmem_newptr(sizeof(void*) * 7);
-        x->outlets[start_frame_out] = bangout(x);					// start_frame bang outlet
+        x->outlets[start_frame_out] = outlet_new(x, NULL);          // start_frame bang outlet
         x->outlets[frame_out] = outlet_new(x, NULL);                // frame_out anything outlet
         x->outlets[hand_out] = outlet_new(x, NULL);                 // hand_out anything outlet
         x->outlets[finger_out] = outlet_new(x, NULL);               // finger_out anything outlet
         x->outlets[tool_out] = outlet_new(x, NULL);                 // tool_out anything outlet
         x->outlets[gesture_out] = outlet_new(x, NULL);              // gesture_out anything outlet
-        x->outlets[end_frame_out] = bangout(x);                     // end_frame bang outlet
+        x->outlets[end_frame_out] = outlet_new(x, NULL);            // end_frame bang outlet
         
         // Create a controller
         x->leap = new Leap::Controller;
@@ -143,7 +143,7 @@ void leapmotion_bang(t_leapmotion *x)
 	x->frame_id_save = frame_id;
 	
     /// output start frame bang /////////////////////////////////////////////
-	outlet_bang(x->outlets[start_frame_out]);
+    outlet_anything(x->outlets[start_frame_out], _sym_bang, 0, NULL);
     
     
     /// output frame info ///////////////////////////////////////////////////
@@ -292,5 +292,6 @@ void leapmotion_bang(t_leapmotion *x)
         outlet_anything(x->outlets[gesture_out], _sym_list, 20, gesture_data);
     }
 	
-	outlet_bang(x->outlets[end_frame_out]);
+     /// output end frame bang /////////////////////////////////////////////
+	outlet_anything(x->outlets[end_frame_out], _sym_bang, 0, NULL);
 }
