@@ -28,17 +28,15 @@ typedef struct _leapmotion
 {
 	t_object	ob;
 	int64_t		frame_id_save;
-	void		**outlets;
+	void		*start_frame_outlet;
+    void		*frame_outlet;
+    void		*hand_outlet;
+    void		*finger_outlet;
+    void		*tool_outlet;
+    void		*gesture_outlet;
+    void		*end_frame_outlet;
 	Leap::Controller	*leap;
 } t_leapmotion;
-
-#define end_frame_out 0
-#define gesture_out 1
-#define tool_out 2
-#define finger_out 3
-#define hand_out 4
-#define frame_out 5
-#define	start_frame_out 6
 
 ///////////////////////// function prototypes
 //// standard set
@@ -81,14 +79,13 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         x->frame_id_save = 0;
         
         // Make several outlets
-        x->outlets = (void**)sysmem_newptr(sizeof(void*) * 7);
-        x->outlets[start_frame_out] = outlet_new(x, NULL);          // start_frame bang outlet
-        x->outlets[frame_out] = outlet_new(x, NULL);                // frame_out anything outlet
-        x->outlets[hand_out] = outlet_new(x, NULL);                 // hand_out anything outlet
-        x->outlets[finger_out] = outlet_new(x, NULL);               // finger_out anything outlet
-        x->outlets[tool_out] = outlet_new(x, NULL);                 // tool_out anything outlet
-        x->outlets[gesture_out] = outlet_new(x, NULL);              // gesture_out anything outlet
-        x->outlets[end_frame_out] = outlet_new(x, NULL);            // end_frame bang outlet
+        x->start_frame_outlet = outlet_new(x, NULL);        // start_frame bang outlet
+        x->frame_outlet = outlet_new(x, NULL);              // frame_out anything outlet
+        x->hand_outlet = outlet_new(x, NULL);               // hand_out anything outlet
+        x->finger_outlet = outlet_new(x, NULL);             // finger_out anything outlet
+        x->tool_outlet = outlet_new(x, NULL);               // tool_out anything outlet
+        x->gesture_outlet = outlet_new(x, NULL);            // gesture_out anything outlet
+        x->end_frame_outlet = outlet_new(x, NULL);          // end_frame bang outlet
         
         // Create a controller
         x->leap = new Leap::Controller;
@@ -108,25 +105,25 @@ void leapmotion_assist(t_leapmotion *x, void *b, long msg, long arg, char *dst)
         strcpy(dst, "input");
 	else {								// Outlets
 		switch(arg) {
-			case end_frame_out:
+			case 0:
             strcpy(dst, "end frame");
             break;
-			case gesture_out:
+			case 1:
             strcpy(dst, "gestures info");
             break;
-			case tool_out:
+			case 2:
             strcpy(dst, "tools info");
             break;
-			case finger_out:
+			case 3:
             strcpy(dst, "fingers info");
             break;
-            case hand_out:
+            case 4:
             strcpy(dst, "hands info");
             break;
-            case frame_out:
+            case 5:
             strcpy(dst, "frames info");
             break;
-            case start_frame_out:
+            case 6:
             strcpy(dst, "start frame");
             break;
 		}
@@ -143,7 +140,7 @@ void leapmotion_bang(t_leapmotion *x)
 	x->frame_id_save = frame_id;
 	
     /// output start frame bang /////////////////////////////////////////////
-    outlet_anything(x->outlets[start_frame_out], _sym_bang, 0, NULL);
+    outlet_bang(x->start_frame_outlet);
     
     
     /// output frame info ///////////////////////////////////////////////////
@@ -160,7 +157,7 @@ void leapmotion_bang(t_leapmotion *x)
 	atom_setlong(frame_data+2, numHands);
 	atom_setlong(frame_data+3, numTools);
     atom_setlong(frame_data+4, numGestures);
-	outlet_anything(x->outlets[frame_out], _sym_list, 5, frame_data);
+	outlet_anything(x->frame_outlet, _sym_list, 5, frame_data);
     
 	
     /// output hand info ////////////////////////////////////////////////////
@@ -217,7 +214,7 @@ void leapmotion_bang(t_leapmotion *x)
 		atom_setfloat(hand_data+18, grab);
 		atom_setlong(hand_data+19, isLeft);
 		
-        outlet_anything(x->outlets[hand_out], _sym_list, 20, hand_data);
+        outlet_anything(x->hand_outlet, _sym_list, 20, hand_data);
         
         
         /// output finger info //////////////////////////////////////////////
@@ -270,7 +267,7 @@ void leapmotion_bang(t_leapmotion *x)
 			atom_setlong(finger_data+13, isExtended);
 			atom_setlong(finger_data+14, type);
 			
-			outlet_anything(x->outlets[finger_out], _sym_list, 15, finger_data);
+			outlet_anything(x->finger_outlet, _sym_list, 15, finger_data);
 		}
 	}
     
@@ -280,7 +277,7 @@ void leapmotion_bang(t_leapmotion *x)
         const Leap::Tool &tool = tools[i];
         t_atom tool_data[20];
         
-        outlet_anything(x->outlets[tool_out], _sym_list, 20, tool_data);
+        outlet_anything(x->tool_outlet, _sym_list, 20, tool_data);
     }
     
     /// output gesture info ////////////////////////////////////////////////
@@ -289,9 +286,9 @@ void leapmotion_bang(t_leapmotion *x)
         const Leap::Gesture &gesture = gestures[i];
         t_atom gesture_data[20];
         
-        outlet_anything(x->outlets[gesture_out], _sym_list, 20, gesture_data);
+        outlet_anything(x->gesture_outlet, _sym_list, 20, gesture_data);
     }
 	
      /// output end frame bang /////////////////////////////////////////////
-	outlet_anything(x->outlets[end_frame_out], _sym_bang, 0, NULL);
+	outlet_anything(x->end_frame_outlet, _sym_bang, 0, NULL);
 }
