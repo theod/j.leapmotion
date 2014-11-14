@@ -91,6 +91,9 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         
         // Create a controller
         x->leap = new Leap::Controller;
+        
+        // Allow the external to receive data even if it is not the foreground application
+        x->leap->setPolicy(Leap::Controller::PolicyFlag::POLICY_BACKGROUND_FRAMES);
     }
     
     return x;
