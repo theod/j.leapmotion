@@ -26,17 +26,19 @@
 ////////////////////////// object struct
 typedef struct _leapmotion
 {
-	t_object	ob;
-	int64_t		frame_id_save;
-	void		*start_frame_outlet;
-    void		*frame_outlet;
-    void		*hand_outlet;
-    void		*finger_outlet;
-    void		*tool_outlet;
-    void		*gesture_outlet;
-    void		*end_frame_outlet;
-	Leap::Controller	*leap;
+	t_object            ob;
+	int64_t             frame_id_save;
+	void                *outlets[7];
+	Leap::Controller    *leap;
 } t_leapmotion;
+
+#define end_frame_out 0
+#define gesture_out 1
+#define tool_out 2
+#define finger_out 3
+#define hand_out 4
+#define frame_out 5
+#define	start_frame_out 6
 
 ///////////////////////// function prototypes
 //// standard set
@@ -79,13 +81,13 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         x->frame_id_save = 0;
         
         // Make several outlets
-        x->start_frame_outlet = outlet_new(x, NULL);        // start_frame bang outlet
-        x->frame_outlet = outlet_new(x, NULL);              // frame_out anything outlet
-        x->hand_outlet = outlet_new(x, NULL);               // hand_out anything outlet
-        x->finger_outlet = outlet_new(x, NULL);             // finger_out anything outlet
-        x->tool_outlet = outlet_new(x, NULL);               // tool_out anything outlet
-        x->gesture_outlet = outlet_new(x, NULL);            // gesture_out anything outlet
-        x->end_frame_outlet = outlet_new(x, NULL);          // end_frame bang outlet
+        x->outlets[start_frame_out] = outlet_new(x, 0);  // start_frame bang outlet
+        x->outlets[frame_out] = outlet_new(x, 0);        // frame_out anything outlet
+        x->outlets[hand_out] = outlet_new(x, 0);         // hand_out anything outlet
+        x->outlets[finger_out] = outlet_new(x, 0);       // finger_out anything outlet
+        x->outlets[tool_out] = outlet_new(x, 0);         // tool_out anything outlet
+        x->outlets[gesture_out] = outlet_new(x, 0);      // gesture_out anything outlet
+        x->outlets[end_frame_out] = outlet_new(x, 0);    // end_frame bang outlet
         
         // Create a controller
         x->leap = new Leap::Controller;
@@ -132,6 +134,9 @@ void leapmotion_assist(t_leapmotion *x, void *b, long msg, long arg, char *dst)
 
 void leapmotion_bang(t_leapmotion *x)
 {
+    // theo : create a j_sym_list symbol here because the _sym_list crashes
+    t_symbol *j_sym_list = gensym("list");
+    
 	const Leap::Frame frame = x->leap->frame();
 	const int64_t frame_id = frame.id();
 	
@@ -140,7 +145,7 @@ void leapmotion_bang(t_leapmotion *x)
 	x->frame_id_save = frame_id;
 	
     /// output start frame bang /////////////////////////////////////////////
-    outlet_bang(x->start_frame_outlet);
+    outlet_bang(x->outlets[start_frame_out]);
     
     
     /// output frame info ///////////////////////////////////////////////////
@@ -157,7 +162,7 @@ void leapmotion_bang(t_leapmotion *x)
 	atom_setlong(frame_data+2, numHands);
 	atom_setlong(frame_data+3, numTools);
     atom_setlong(frame_data+4, numGestures);
-	outlet_anything(x->frame_outlet, _sym_list, 5, frame_data);
+	outlet_anything(x->outlets[frame_out], j_sym_list, 5, frame_data);
     
 	
     /// output hand info ////////////////////////////////////////////////////
@@ -214,7 +219,7 @@ void leapmotion_bang(t_leapmotion *x)
 		atom_setfloat(hand_data+18, grab);
 		atom_setlong(hand_data+19, isLeft);
 		
-        outlet_anything(x->hand_outlet, _sym_list, 20, hand_data);
+        outlet_anything(x->outlets[hand_out], j_sym_list, 20, hand_data);
         
         
         /// output finger info //////////////////////////////////////////////
@@ -267,7 +272,7 @@ void leapmotion_bang(t_leapmotion *x)
 			atom_setlong(finger_data+13, isExtended);
 			atom_setlong(finger_data+14, type);
 			
-			outlet_anything(x->finger_outlet, _sym_list, 15, finger_data);
+			outlet_anything(x->outlets[finger_out], j_sym_list, 15, finger_data);
 		}
 	}
     
@@ -275,20 +280,72 @@ void leapmotion_bang(t_leapmotion *x)
     for (size_t i = 0; i < numTools; i++)
 	{
         const Leap::Tool &tool = tools[i];
-        t_atom tool_data[20];
+        t_atom tool_data[7];
         
-        outlet_anything(x->tool_outlet, _sym_list, 20, tool_data);
+        // id
+        const int32_t tool_id = tool.id();
+        
+        atom_setlong(tool_data+0, tool_id);
+        
+        // position
+        const Leap::Vector position = tool.tipPosition();
+        
+        atom_setfloat(tool_data+1, position.x);
+        atom_setfloat(tool_data+2, position.y);
+        atom_setfloat(tool_data+3, position.z);
+        
+        // direction
+        const Leap::Vector direction = tool.direction();
+        
+        atom_setfloat(tool_data+4, direction.x);
+        atom_setfloat(tool_data+5, direction.y);
+        atom_setfloat(tool_data+6, direction.z);
+        
+        outlet_anything(x->outlets[tool_out], j_sym_list, 7, tool_data);
     }
     
     /// output gesture info ////////////////////////////////////////////////
     for (size_t i = 0; i < numGestures; i++)
 	{
         const Leap::Gesture &gesture = gestures[i];
-        t_atom gesture_data[20];
+        t_atom gesture_data[2];
         
-        outlet_anything(x->gesture_outlet, _sym_list, 20, gesture_data);
+        // id
+        const int32_t gesture_id = gesture.id();
+        
+        atom_setlong(gesture_data+0, gesture_id);
+        
+        // depending on the type of the gesture
+        switch (gesture.type()) {
+                
+            case Leap::Gesture::TYPE_CIRCLE:
+            {
+                atom_setsym(gesture_data+1, gensym("circle"));
+                break;
+            }
+            case Leap::Gesture::TYPE_SWIPE:
+            {
+                atom_setsym(gesture_data+1, gensym("swipe"));
+                break;
+            }
+            case Leap::Gesture::TYPE_KEY_TAP:
+            {
+                atom_setsym(gesture_data+1, gensym("key_tap"));
+                break;
+            }
+            case Leap::Gesture::TYPE_SCREEN_TAP:
+            {
+                atom_setsym(gesture_data+1, gensym("screen_tap"));
+                break;
+            }
+            default:
+                object_error((t_object*)x, "unknown gesture type");
+                break;
+        }
+        
+        outlet_anything(x->outlets[gesture_out], j_sym_list, 2, gesture_data);
     }
 	
      /// output end frame bang /////////////////////////////////////////////
-	outlet_anything(x->end_frame_outlet, _sym_bang, 0, NULL);
+	outlet_bang(x->outlets[end_frame_out]);
 }
