@@ -384,14 +384,14 @@ void leapmotion_bang(t_leapmotion *x)
                     Leap::CircleGesture previousUpdate = Leap::CircleGesture(x->leap->frame(1).gesture(circle.id()));
                     sweptAngle = (circle.progress() - previousUpdate.progress()) * 2 * M_PI;
                 }
-                atom_setfloat(circle_data+6, sweptAngle);
+                atom_setfloat(circle_data+5, sweptAngle);
                 
                 // clockwiseness
                 const bool clockwiseness = circle.pointable().direction().angleTo(circle.normal()) <= M_PI/2;
                 
-                atom_setlong(circle_data+7, clockwiseness ? 1 : 0);
+                atom_setlong(circle_data+6, clockwiseness ? 1 : 0);
                 
-                outlet_anything(x->outlets[gesture_out], j_sym_list, 8, circle_data);
+                outlet_anything(x->outlets[gesture_out], j_sym_list, 7, circle_data);
                 break;
             }
                 
