@@ -280,7 +280,7 @@ void leapmotion_bang(t_leapmotion *x)
     for (size_t i = 0; i < numTools; i++)
 	{
         const Leap::Tool &tool = tools[i];
-        t_atom tool_data[7];
+        t_atom tool_data[13];
         
         // id
         const int32_t tool_id = tool.id();
@@ -301,7 +301,26 @@ void leapmotion_bang(t_leapmotion *x)
         atom_setfloat(tool_data+5, direction.y);
         atom_setfloat(tool_data+6, direction.z);
         
-        outlet_anything(x->outlets[tool_out], j_sym_list, 7, tool_data);
+        // velocity
+        const Leap::Vector velocity = tool.tipVelocity();
+        
+        atom_setfloat(tool_data+7, velocity.x);
+        atom_setfloat(tool_data+8, velocity.y);
+        atom_setfloat(tool_data+9, velocity.z);
+        
+        // width and length
+        const double width = tool.width();
+        const double lenght = tool.length();
+        
+        atom_setfloat(tool_data+10, width);
+        atom_setfloat(tool_data+11, lenght);
+        
+        // misc
+        const bool isExtended = tool.isExtended();
+        
+        atom_setlong(tool_data+12, isExtended);
+        
+        outlet_anything(x->outlets[tool_out], j_sym_list, 13, tool_data);
     }
     
     /// output gesture info ////////////////////////////////////////////////
