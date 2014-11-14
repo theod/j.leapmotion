@@ -28,6 +28,7 @@ typedef struct _leapmotion
 {
 	t_object            ob;
 	int64_t             frame_id_save;
+    t_symbol*           stateNames[4];
 	void                *outlets[7];
 	Leap::Controller    *leap;
 } t_leapmotion;
@@ -80,7 +81,13 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         
         x->frame_id_save = 0;
         
-        // Make several outlets
+        // prepare state symbols
+        x->stateNames[0] = gensym("invalid");
+        x->stateNames[1] = gensym("start");
+        x->stateNames[2] = gensym("update");
+        x->stateNames[3] = gensym("end");
+        
+        // make several outlets
         x->outlets[start_frame_out] = outlet_new(x, 0);  // start_frame bang outlet
         x->outlets[frame_out] = outlet_new(x, 0);        // frame_out anything outlet
         x->outlets[hand_out] = outlet_new(x, 0);         // hand_out anything outlet
@@ -89,11 +96,17 @@ void *leapmotion_new(t_symbol *s, long argc, t_atom *argv)
         x->outlets[gesture_out] = outlet_new(x, 0);      // gesture_out anything outlet
         x->outlets[end_frame_out] = outlet_new(x, 0);    // end_frame bang outlet
         
-        // Create a controller
+        // create a controller
         x->leap = new Leap::Controller;
         
-        // Allow the external to receive data even if it is not the foreground application
+        // allow the external to receive data even if it is not the foreground application
         x->leap->setPolicy(Leap::Controller::PolicyFlag::POLICY_BACKGROUND_FRAMES);
+        
+        // Allow gesture recognition
+        x->leap->enableGesture(Leap::Gesture::TYPE_CIRCLE);
+        x->leap->enableGesture(Leap::Gesture::TYPE_SWIPE);
+        x->leap->enableGesture(Leap::Gesture::TYPE_KEY_TAP);
+        x->leap->enableGesture(Leap::Gesture::TYPE_SCREEN_TAP);
     }
     
     return x;
@@ -330,42 +343,174 @@ void leapmotion_bang(t_leapmotion *x)
     for (size_t i = 0; i < numGestures; i++)
 	{
         const Leap::Gesture &gesture = gestures[i];
-        t_atom gesture_data[2];
-        
-        // id
-        const int32_t gesture_id = gesture.id();
-        
-        atom_setlong(gesture_data+0, gesture_id);
-        
+       
         // depending on the type of the gesture
         switch (gesture.type()) {
-                
+            
+            /// output circle info ////////////////////////////////////////////////
             case Leap::Gesture::TYPE_CIRCLE:
             {
-                atom_setsym(gesture_data+1, gensym("circle"));
+                Leap::CircleGesture circle = gesture;
+                
+                t_atom circle_data[8];
+                
+                // type (as first data for routing)
+                atom_setsym(circle_data+0, gensym("circle"));
+                
+                // id
+                const int32_t circle_id = gesture.id();
+                
+                atom_setlong(circle_data+1, circle_id);
+                
+                // state
+                const int32_t circle_state = gesture.state();
+                
+                atom_setsym(circle_data+2, x->stateNames[circle_state]);
+                
+                // progress
+                const double progress = circle.progress();
+                
+                atom_setfloat(circle_data+3, progress);
+                
+                // radius
+                const double radius = circle.radius();
+                
+                atom_setfloat(circle_data+4, radius);
+                
+                // angle swept since last frame
+                float sweptAngle = 0;
+                if (circle.state() != Leap::Gesture::STATE_START)
+                {
+                    Leap::CircleGesture previousUpdate = Leap::CircleGesture(x->leap->frame(1).gesture(circle.id()));
+                    sweptAngle = (circle.progress() - previousUpdate.progress()) * 2 * M_PI;
+                }
+                atom_setfloat(circle_data+6, sweptAngle);
+                
+                // clockwiseness
+                const bool clockwiseness = circle.pointable().direction().angleTo(circle.normal()) <= M_PI/2;
+                
+                atom_setlong(circle_data+7, clockwiseness ? 1 : 0);
+                
+                outlet_anything(x->outlets[gesture_out], j_sym_list, 8, circle_data);
                 break;
             }
+                
+            /// output swipe info ////////////////////////////////////////////////
             case Leap::Gesture::TYPE_SWIPE:
             {
-                atom_setsym(gesture_data+1, gensym("swipe"));
+                Leap::SwipeGesture swipe = gesture;
+                
+                t_atom swipe_data[7];
+                
+                // type (as first data for routing)
+                atom_setsym(swipe_data+0, gensym("swipe"));
+                
+                // id
+                const int32_t swipe_id = gesture.id();
+                
+                atom_setlong(swipe_data+1, swipe_id);
+                
+                // state
+                const int32_t swipe_state = gesture.state();
+                
+                atom_setsym(swipe_data+2, x->stateNames[swipe_state]);
+                
+                // direction
+                const Leap::Vector direction = swipe.direction();
+                
+                atom_setfloat(swipe_data+3, direction.x);
+                atom_setfloat(swipe_data+4, direction.y);
+                atom_setfloat(swipe_data+5, direction.z);
+                
+                // speed
+                const double speed = swipe.speed();
+                
+                atom_setfloat(swipe_data+6, speed);
+                
+                outlet_anything(x->outlets[gesture_out], j_sym_list, 7, swipe_data);
                 break;
             }
+                
+            /// output key tap info ////////////////////////////////////////////////
             case Leap::Gesture::TYPE_KEY_TAP:
             {
-                atom_setsym(gesture_data+1, gensym("key_tap"));
+                Leap::KeyTapGesture key_tap = gesture;
+                
+                t_atom key_tap_data[9];
+                
+                // type (as first data for routing)
+                atom_setsym(key_tap_data+0, gensym("key_tap"));
+                
+                // id
+                const int32_t key_tap_id = gesture.id();
+                
+                atom_setlong(key_tap_data+1, key_tap_id);
+                
+                // state
+                const int32_t key_tap_state = gesture.state();
+                
+                atom_setsym(key_tap_data+2, x->stateNames[key_tap_state]);
+                
+                // position
+                const Leap::Vector position = key_tap.position();
+                
+                atom_setfloat(key_tap_data+3, position.x);
+                atom_setfloat(key_tap_data+4, position.y);
+                atom_setfloat(key_tap_data+5, position.z);
+                
+                // direction
+                const Leap::Vector direction = key_tap.direction();
+                
+                atom_setfloat(key_tap_data+6, direction.x);
+                atom_setfloat(key_tap_data+7, direction.y);
+                atom_setfloat(key_tap_data+8, direction.z);
+                
+                outlet_anything(x->outlets[gesture_out], j_sym_list, 9, key_tap_data);
                 break;
             }
+                
+            /// output screen tap info ////////////////////////////////////////////////
             case Leap::Gesture::TYPE_SCREEN_TAP:
             {
-                atom_setsym(gesture_data+1, gensym("screen_tap"));
+                Leap::ScreenTapGesture screen_tap = gesture;
+                
+                t_atom screen_tap_data[9];
+                
+                // type (as first data for routing)
+                atom_setsym(screen_tap_data+0, gensym("screen_tap"));
+                
+                // id
+                const int32_t screen_tap_id = gesture.id();
+                
+                atom_setlong(screen_tap_data+1, screen_tap_id);
+                
+                // state
+                const int32_t screen_tap_state = gesture.state();
+                
+                atom_setsym(screen_tap_data+2, x->stateNames[screen_tap_state]);
+                
+                // position
+                const Leap::Vector position = screen_tap.position();
+                
+                atom_setfloat(screen_tap_data+3, position.x);
+                atom_setfloat(screen_tap_data+4, position.y);
+                atom_setfloat(screen_tap_data+5, position.z);
+                
+                // direction
+                const Leap::Vector direction = screen_tap.direction();
+                
+                atom_setfloat(screen_tap_data+6, direction.x);
+                atom_setfloat(screen_tap_data+7, direction.y);
+                atom_setfloat(screen_tap_data+8, direction.z);
+                
+                outlet_anything(x->outlets[gesture_out], j_sym_list, 9, screen_tap_data);
+                
                 break;
             }
             default:
                 object_error((t_object*)x, "unknown gesture type");
                 break;
         }
-        
-        outlet_anything(x->outlets[gesture_out], j_sym_list, 2, gesture_data);
     }
 	
      /// output end frame bang /////////////////////////////////////////////
